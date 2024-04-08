@@ -1,59 +1,81 @@
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardRemove
+def schedule_to_text(schedule):
+    text = ""
+    for week_type, days in schedule.items():
+        text += f"{week_type.capitalize()} week:\n"
+        for day, lessons in days.items():
+            text += f"\t{day}:\n"
+            if isinstance(lessons, str):
+                text += f"\t\t{lessons}\n"
+            else:
+                for lesson in lessons:
+                    text += f"\t\t{lesson['time']}: {lesson['info']}\n"
+                    if lesson['addr']:
+                        text += f"\t\t\tLocation: {lesson['addr']}\n"
+    return text
 
-storage = MemoryStorage()
-
-bot = Bot(token='6839706247:AAHnMPOdwbkWeamBgh-3vorJF9Ht2VnvqjQ')
-dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
-
-# Таблица с расписанием
-SCHEDULE = {
-    '101': {
-        'Понедельник': '10:00 - Математика',
-        'Вторник': '12:00 - Русский язык',
-        'Среда': '14:00 - Физика'
-    },
-    '102': {
-        'Понедельник': '11:00 - История',
-        'Вторник': '13:00 - Биология',
-        'Среда': '15:00 - Химия'
+# Test the function with the given schedule
+schedule = {
+    "odd": {
+        "Monday": [
+            {
+                "time": "10:00-11:30",
+                "addr": "",
+                "info": "Виртуализация сетевых функций(Лек): zoom, Аминов Натиг Сабит оглы, Дистанционный"
+            },
+            {
+                "time": "11:40-13:10",
+                "addr": "",
+                "info": "Виртуализация сетевых функций(Прак): zoom, Аминов Натиг Сабит оглы, Дистанционный"
+            },
+            {
+                "time": "13:30-15:00",
+                "addr": "",
+                "info": "Виртуализация сетевых функций(Лаб): zoom, Аминов Натиг Сабит оглы, Дистанционный"
+            }
+        ],
+        "Tuesday": [
+            {
+                "time": "10:00-11:30",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Технологии IP-телефонии(Лек), Белоцерковец Сергей Александрович, Очно - дистанционный"
+            },
+            {
+                "time": "11:40-13:10",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Технологии IP-телефонии(Прак), Белоцерковец Сергей Александрович, Очно - дистанционный"
+            },
+            {
+                "time": "13:30-15:00",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Технологии IP-телефонии(Лаб), Белоцерковец Сергей Александрович, Очно - дистанционный"
+            }
+        ],
+        "Wednesday": "No lessons",
+        "Thursday": [
+            {
+                "time": "15:20-16:50",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Системы и архитектуры резервного копирования и восстановления(Лек), Карасев Василий Владимирович, Очно - дистанционный"
+            },
+            {
+                "time": "15:20-16:50",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Системы и архитектуры резервного копирования и восстановления(Лаб), Карасев Василий Владимирович, Очно - дистанционный"
+            },
+            {
+                "time": "17:00-18:30",
+                "addr": "Биржевая линия, д.14, лит.А",
+                "info": "Системы и архитектуры резервного копирования и восстановления(Лаб), Карасев Василий Владимирович, Очно - дистанционный"
+            }
+        ],
+        "Friday": [
+            {
+                "time": "11:40-13:10",
+                "addr": "",
+                "info": "Программно-конфигурируемые сети(Лек), Шкребе..."
+            }
+        ]
     }
 }
 
-class ChooseGroup(StatesGroup):
-    group = State()
-
-
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await ChooseGroup.group.set()
-    await message.reply('Введите номер вашей группы:', reply=False)
-
-# Обработчик ввода номера группы
-@dp.message_handler(state=ChooseGroup.group)
-async def get_group(message: types.Message, state: FSMContext):
-    group_num = message.text
-    if group_num not in SCHEDULE:
-        await message.answer('Неверный номер группы.')
-        return
-    
-    await state.finish()
-    
-    schedule_text = ''
-    for day, lesson in SCHEDULE[group_num].items():
-        schedule_text += f'{day}: {lesson}\n'
-    
-    await message.answer(f'**Расписание для группы {group_num}:**\n\n{schedule_text}', reply_markup=ReplyKeyboardRemove())
-
-@dp.message_handler()
-async def echo(message: types.Message):
-    await message.answer(message.text)
-
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+print(schedule_to_text(schedule))
