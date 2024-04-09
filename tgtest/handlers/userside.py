@@ -1,22 +1,11 @@
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 import os
 import json
 import emoji
-from config import bottoken
-
-storage = MemoryStorage()
-
-bot = Bot(token=bottoken)
-dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
-
-class ChooseGroup(StatesGroup):
-    group = State()
+from createbot import bot, dp
+from aiogram import types
+from handlers.states import ChooseGroup
 
 def schedule_to_text(schedule):
     text = ""
@@ -60,7 +49,3 @@ async def get_group(message: types.Message, state: FSMContext):
 @dp.message_handler()
 async def echo(message: types.Message):
     await message.answer(message.text)
-
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)

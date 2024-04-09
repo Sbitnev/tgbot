@@ -1,0 +1,32 @@
+{
+    "odd": {
+        "Monday": "No lessons",
+        "Tuesday": "No lessons",
+        "Wednesday": [
+            {
+                "time": "17:00-18:30",
+                "addr": "",
+                "info": "Безопасность жизнедеятельности(Лек):  Вводная лекция, Русанов Дмитрий Юрьевич, Дистанционный"
+            }
+        ],
+        "Thursday": "No lessons",
+        "Friday": "No lessons",
+        "Saturday": "No lessons",
+        "Sunday": "No lessons"
+    },
+    "even": {
+        "Monday": "No lessons",
+        "Tuesday": "No lessons",
+        "Wednesday": [
+            {
+                "time": "17:00-18:30",
+                "addr": "",
+                "info": "Безопасность жизнедеятельности(Лек):  Вводная лекция, Русанов Дмитрий Юрьевич, Дистанционный"
+            }
+        ],
+        "Thursday": "No lessons",
+        "Friday": "No lessons",
+        "Saturday": "No lessons",
+        "Sunday": "No lessons"
+    }
+}
