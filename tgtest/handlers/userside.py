@@ -6,6 +6,7 @@ import emoji
 from createbot import bot, dp
 from aiogram import types
 from handlers.states import ChooseGroup
+from database import sqldb
 
 def schedule_to_text(schedule):
     text = ""
@@ -24,8 +25,15 @@ def schedule_to_text(schedule):
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
+    await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False)
+    
+    all_users_id = [id_[0] for id_ in await sqldb.get_all_users()]
+    
+    if message.from_user.id not in all_users_id:
+        await sqldb.add_user(message.from_user.id)
+
     await ChooseGroup.group.set()
-    await message.reply('Введите номер вашей группы:', reply=False)
+    await message.reply('Введите номер вашей группы латинскими буквами:', reply=False)
 
 # Обработчик ввода номера группы
 @dp.message_handler(state=ChooseGroup.group)
@@ -38,7 +46,15 @@ async def get_group(message: types.Message, state: FSMContext):
     
     await state.finish()
     
+    await sqldb.change_user_group(message.from_user.id, group_num)
+
+    await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь /schedule", reply=False)
+
+@dp.message_handler(commands=['schedule'])
+async def schedule(message: types.Message):
+
     schedule_text = ''
+    group_num = str(sqldb.get_group_name(message.from_user.id))
     with open("groups/"+str(group_num)+".json") as file:
         SCHEDULE = json.load(file)
     
