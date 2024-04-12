@@ -38,6 +38,7 @@ def get_schedule(web_page, day=1):
         # Место проведения занятий
         locations_list = schedule_table.find_all("td", attrs={"class": "room"})
         locations_list = [room.span.text for room in locations_list]
+        locations_list = ['zoom' if x == '' else x for x in locations_list]
 
         # Название дисциплин и имена преподавателей
         lessons_list = schedule_table.find_all("td", attrs={"class": "lesson"})
@@ -45,6 +46,7 @@ def get_schedule(web_page, day=1):
         lessons_list = [', '.join([info for info in lesson_info if info]) for lesson_info in lessons_list]
         lessons_list = [string.replace('\n', '') for string in lessons_list]
         lessons_list = [string.replace('     ', ' ') for string in lessons_list]
+        lessons_list = [string.replace(': zoom', '') for string in lessons_list]
         lessons_list = [string.strip() for string in lessons_list]
 
         return times_list, locations_list, lessons_list
@@ -92,7 +94,7 @@ def get_groupschedule(group):
         print('File exists')
         return 1
 
-# if get_groupschedule('M34t4r001'):
+get_groupschedule('K34211')
 #     print('wow')
         
 

@@ -1,66 +1,47 @@
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardRemove
-import os
-import json
-import emoji
-from config import bottoken
+# import datetime
 
-storage = MemoryStorage()
+# def get_day_and_week():
+#     today = datetime.date.today()
+#     day_of_week = today.weekday()  # Monday - 0, Sunday - 6
+#     even_week = 1 if (today.isocalendar()[1] % 2 == 0) else 0  # 0 for odd week, 1 for even
+#     return even_week, day_of_week
 
-bot = Bot(token=bottoken)
-dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
+# print(get_day_and_week())
 
-class ChooseGroup(StatesGroup):
-    group = State()
+# locations_list = ['zoom', '', 'location', '', 'zoom', 'mapview']
+# locations_list = ['zoom' if x == '' else x for x in locations_list]
+# print(locations_list)
 
-def schedule_to_text(schedule):
-    text = ""
-    for week_type, days in schedule.items():
-        text += f"{week_type.capitalize()} week:\n"
-        for day, lessons in days.items():
-            text += f"*{day}:*\n"
-            if isinstance(lessons, str):
-                text += f"{lessons}\n"
-            else:
-                for lesson in lessons:
-                    text += emoji.emojize(f":alarm_clock: {lesson['time']}:\n🍘{lesson['info']}\n")
-                    if lesson['addr']:
-                        text += (emoji.emojize(':round_pushpin: Location:')) + f"{lesson['addr']}\n"
-    return text
+a = {
+"Monday": [
+    {
+        "time": "10:00-11:30",
+        "addr": "zoom",
+        "info": "Виртуализация сетевых функций(Лек), Аминов Натиг Сабит оглы, Дистанционный"
+    },
+    {
+        "time": "11:40-13:10",
+        "addr": "zoom",
+        "info": "Виртуализация сетевых функций(Прак), Аминов Натиг Сабит оглы, Дистанционный"
+    },
+    {
+        "time": "13:30-15:00",
+        "addr": "zoom",
+        "info": "Виртуализация сетевых функций(Лаб), Аминов Натиг Сабит оглы, Дистанционный"
+    }]
+            }
 
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await ChooseGroup.group.set()
-    await message.reply('Введите номер вашей группы:', reply=False)
+def format_schedule(schedule_dict):
+    output = ""
+    for day, classes in schedule_dict.items():
+        output += f"Расписание на {day}:\n"
+        for class_info in classes:
+            arr = class_info['info'].split(", ")
+            output += f"Время: {class_info['time']}\n"
+            output += f"Место: {class_info['addr']}\n"
+            output += f"Предмет: {arr[0]}\n"
+            output += f"Преподаватель: {arr[1]}\n"
+            output += f"Формат: {arr[2]}\n\n"
+    return output
 
-# Обработчик ввода номера группы
-@dp.message_handler(state=ChooseGroup.group)
-async def get_group(message: types.Message, state: FSMContext):
-    group_num = message.text
-    group_num = group_num.upper()
-    if not os.path.exists('groups/'+str(group_num)+'.json'):
-        await message.reply('Неверный номер группы.', reply=False)
-        return
-    
-    await state.finish()
-    
-    schedule_text = ''
-    with open("groups/"+str(group_num)+".json") as file:
-        SCHEDULE = json.load(file)
-    
-    schedule_text = schedule_to_text(SCHEDULE)
-    
-    await bot.send_message(message.from_user.id, text= f'**Расписание для группы {group_num}:**\n\n{schedule_text}', reply_markup=ReplyKeyboardRemove(), parse_mode="Markdown")
-
-@dp.message_handler()
-async def echo(message: types.Message):
-    await message.answer(message.text)
-
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+print(format_schedule(a))
