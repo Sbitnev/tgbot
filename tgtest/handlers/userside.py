@@ -8,11 +8,13 @@ from aiogram import types
 from handlers.states import ChooseGroup
 from database import sqldb
 import datetime
+from keyb import menukb
 
 def get_day_and_week():
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     today = datetime.date.today()
     day_of_week = today.weekday()  # Monday - 0, Sunday - 6
-    even_week = 1 if (today.isocalendar()[1] % 2 == 0) else 0  # 0 for odd week, 1 for even
+    even_week = "odd" if (today.isocalendar()[1] % 2 == 0) else "even"  # 0 for odd week, 1 for even
     return even_week, day_of_week
 
 def schedule_to_text(schedule):
@@ -62,6 +64,7 @@ async def schedule(message: types.Message):
     await message.reply(schedule_text, reply=False, parse_mode="Markdown")
 
 
+
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
     await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False)
@@ -87,7 +90,7 @@ async def get_group(message: types.Message, state: FSMContext):
     
     await sqldb.change_user_group(message.from_user.id, group_num)
 
-    await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь /schedule", reply=False)
+    await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь /schedule", reply=False, reply_markup=menukb.dayMenu)
 
 @dp.message_handler(commands=['schedule'])
 async def schedule(message: types.Message):
@@ -103,4 +106,57 @@ async def schedule(message: types.Message):
 
 @dp.message_handler()
 async def echo(message: types.Message):
-    await message.answer(message.text)
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    if message.text == 'Расписание на сегодня':
+        schedule_text = ''
+        group_num = str(sqldb.get_group_name(message.from_user.id))
+        with open("groups/"+str(group_num)+".json") as file:
+            SCHEDULE = json.load(file)
+        week, day = get_day_and_week()
+        day = days_of_week[day]
+    
+        schedule_text = format_day({day:SCHEDULE[week][day]})
+        await message.answer(schedule_text, parse_mode="Markdown")
+    
+    elif message.text == 'Расписание на завтра':
+        schedule_text = ''
+        group_num = str(sqldb.get_group_name(message.from_user.id))
+        with open("groups/"+str(group_num)+".json") as file:
+            SCHEDULE = json.load(file)
+        week, day = get_day_and_week()
+        if day == 6:
+            week = "odd" if (week == "even") else "even"
+            day = days_of_week[0]
+        else:
+            day = days_of_week[(day+1)%7]
+    
+        schedule_text = format_day({day:SCHEDULE[week][day]})
+        await message.answer(schedule_text, parse_mode="Markdown")
+
+    elif message.text == 'Расписание на эту неделю':
+        schedule_text = ''
+        group_num = str(sqldb.get_group_name(message.from_user.id))
+        with open("groups/"+str(group_num)+".json") as file:
+            SCHEDULE = json.load(file)
+        week, day = get_day_and_week()
+        SCHEDULE = SCHEDULE[week]
+        for day, lessons in SCHEDULE.items():
+            schedule_text += format_day({day : lessons})
+    
+        await message.answer(schedule_text, parse_mode="Markdown")
+
+    elif message.text == 'Расписание на следующую неделю':
+        schedule_text = ''
+        group_num = str(sqldb.get_group_name(message.from_user.id))
+        with open("groups/"+str(group_num)+".json") as file:
+            SCHEDULE = json.load(file)
+        week, day = get_day_and_week()
+        week = "odd" if (week == "even") else "even"
+        SCHEDULE = SCHEDULE[week]
+        for day, lessons in SCHEDULE.items():
+            schedule_text += format_day({day : lessons})
+    
+        await message.answer(schedule_text, parse_mode="Markdown")
+    
+
+    # await message.answer(message.text)

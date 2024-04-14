@@ -94,7 +94,7 @@ def get_groupschedule(group):
         print('File exists')
         return 1
 
-get_groupschedule('K34211')
+get_groupschedule('K34202')
 #     print('wow')
         
 
