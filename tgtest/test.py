@@ -1,47 +1,34 @@
-# import datetime
+import asyncio
+import datetime
+from aiogram import Bot, Dispatcher
+from aiogram.types import ChatType
 
-# def get_day_and_week():
-#     today = datetime.date.today()
-#     day_of_week = today.weekday()  # Monday - 0, Sunday - 6
-#     even_week = 1 if (today.isocalendar()[1] % 2 == 0) else 0  # 0 for odd week, 1 for even
-#     return even_week, day_of_week
+# Инициализация бота
+bot = Bot(token='6839706247:AAHnMPOdwbkWeamBgh-3vorJF9Ht2VnvqjQ')
+dp = Dispatcher(bot)
 
-# print(get_day_and_week())
+# Список пользователей (их ID)
+user_ids = [350509350]  # пример ID пользователей
 
-# locations_list = ['zoom', '', 'location', '', 'zoom', 'mapview']
-# locations_list = ['zoom' if x == '' else x for x in locations_list]
-# print(locations_list)
+# Функция для отправки сообщения
+async def send_message_to_users():
+    for user_id in user_ids:
+        try:
+            await bot.send_message(user_id, "Привет")
+        except Exception as e:
+            print(f"Ошибка при отправке сообщения пользователю {user_id}: {e}")
 
-a = {
-"Monday": [
-    {
-        "time": "10:00-11:30",
-        "addr": "zoom",
-        "info": "Виртуализация сетевых функций(Лек), Аминов Натиг Сабит оглы, Дистанционный"
-    },
-    {
-        "time": "11:40-13:10",
-        "addr": "zoom",
-        "info": "Виртуализация сетевых функций(Прак), Аминов Натиг Сабит оглы, Дистанционный"
-    },
-    {
-        "time": "13:30-15:00",
-        "addr": "zoom",
-        "info": "Виртуализация сетевых функций(Лаб), Аминов Натиг Сабит оглы, Дистанционный"
-    }]
-            }
+# Функция для планирования отправки сообщения
+async def schedule_message():
+    while True:
+        now = datetime.datetime.now()
+        if now.hour == 22 and now.minute == 31:
+            await send_message_to_users()
+            print('Time')
+        await asyncio.sleep(60)  # проверяем каждую минуту
 
-def format_schedule(schedule_dict):
-    output = ""
-    for day, classes in schedule_dict.items():
-        output += f"Расписание на {day}:\n"
-        for class_info in classes:
-            arr = class_info['info'].split(", ")
-            output += f"Время: {class_info['time']}\n"
-            output += f"Место: {class_info['addr']}\n"
-            output += f"Предмет: {arr[0]}\n"
-            output += f"Преподаватель: {arr[1]}\n"
-            output += f"Формат: {arr[2]}\n\n"
-    return output
-
-print(format_schedule(a))
+# Запуск бота
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(schedule_message())
+    loop.run_forever()
