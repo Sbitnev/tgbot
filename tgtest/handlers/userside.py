@@ -50,33 +50,37 @@ def format_day(schedule_dict):
                 output += f"Формат: {arr[2]}\n\n"
     return output
 
-
-@dp.message_handler(commands=['mondayodd'])
-async def schedule(message: types.Message):
-
+def day_sch(id, week, day):
     schedule_text = ''
-    group_num = str(sqldb.get_group_name(message.from_user.id))
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    group_num = str(sqldb.get_group_name(id))
     with open("groups/"+str(group_num)+".json") as file:
         SCHEDULE = json.load(file)
-    
-    schedule_text = format_day({"Monday":SCHEDULE["odd"]["Monday"]})
-    
-#    await bot.send_message(message.from_user.id, text=schedule_text, reply_markup=ReplyKeyboardRemove(), parse_mode="Markdown")
-    await message.reply(schedule_text, reply=False, parse_mode="Markdown")
+    if day == 7:
+        week = "odd" if (week == "even") else "even"
+        day = days_of_week[0]
+    else:
+        day = days_of_week[(day)%7]
+
+    schedule_text = format_day({day:SCHEDULE[week][day]})
+    return schedule_text
+
 
 
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False)
-    
     all_users_id = [id_[0] for id_ in await sqldb.get_all_users()]
     
     if message.from_user.id not in all_users_id:
         await sqldb.add_user(message.from_user.id)
 
-    await ChooseGroup.group.set()
-    await message.reply('Введите номер вашей группы латинскими буквами:', reply=False)
+    if sqldb.get_group_name == 'no_group':
+        await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False)
+        await ChooseGroup.group.set()
+        await message.reply('Введите номер вашей группы латинскими буквами:', reply=False)
+    else:
+        await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False, reply_markup=menukb.mainMenu)
 
 # Обработчик ввода номера группы
 @dp.message_handler(state=ChooseGroup.group)
@@ -91,47 +95,31 @@ async def get_group(message: types.Message, state: FSMContext):
     
     await sqldb.change_user_group(message.from_user.id, group_num)
 
-    await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь /schedule", reply=False, reply_markup=menukb.dayMenu)
+    await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь клавиатурой", reply=False, reply_markup=menukb.mainMenu)
 
-@dp.message_handler(commands=['schedule'])
-async def schedule(message: types.Message):
+# @dp.message_handler(commands=['schedule'])
+# async def schedule(message: types.Message):
 
-    schedule_text = ''
-    group_num = str(sqldb.get_group_name(message.from_user.id))
-    with open("groups/"+str(group_num)+".json") as file:
-        SCHEDULE = json.load(file)
+#     schedule_text = ''
+#     group_num = str(sqldb.get_group_name(message.from_user.id))
+#     with open("groups/"+str(group_num)+".json") as file:
+#         SCHEDULE = json.load(file)
     
-    schedule_text = schedule_to_text(SCHEDULE)
+#     schedule_text = schedule_to_text(SCHEDULE)
     
-    await message.reply(f'**Расписание для группы {group_num}:**\n\n{schedule_text}', reply=False, parse_mode="Markdown")
+#     await message.reply(f'**Расписание для группы {group_num}:**\n\n{schedule_text}', reply=False, parse_mode="Markdown")
 
 @dp.message_handler()
 async def echo(message: types.Message):
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     if message.text == 'Расписание на сегодня':
-        schedule_text = ''
-        group_num = str(sqldb.get_group_name(message.from_user.id))
-        with open("groups/"+str(group_num)+".json") as file:
-            SCHEDULE = json.load(file)
         week, day = get_day_and_week()
-        day = days_of_week[day]
-    
-        schedule_text = format_day({day:SCHEDULE[week][day]})
+        schedule_text = day_sch(message.from_user.id, week, day)
         await message.answer(schedule_text, parse_mode="Markdown")
     
     elif message.text == 'Расписание на завтра':
-        schedule_text = ''
-        group_num = str(sqldb.get_group_name(message.from_user.id))
-        with open("groups/"+str(group_num)+".json") as file:
-            SCHEDULE = json.load(file)
         week, day = get_day_and_week()
-        if day == 6:
-            week = "odd" if (week == "even") else "even"
-            day = days_of_week[0]
-        else:
-            day = days_of_week[(day+1)%7]
-    
-        schedule_text = format_day({day:SCHEDULE[week][day]})
+        schedule_text = day_sch(message.from_user.id, week, day+1)
         await message.answer(schedule_text, parse_mode="Markdown")
 
     elif message.text == 'Расписание на эту неделю':
@@ -158,6 +146,24 @@ async def echo(message: types.Message):
             schedule_text += format_day({day : lessons})
     
         await message.answer(schedule_text, parse_mode="Markdown")
+
+    elif message.text == 'Изменить группу':
+        await ChooseGroup.group.set()
+        await message.reply('Введите номер вашей группы латинскими буквами:', reply=False)
+
+    elif message.text == 'Узнать группу':
+        group_num = str(sqldb.get_group_name(message.from_user.id))
+        await message.reply(f'Вы указали этот номер группы: {group_num}', reply=False)
+
+    elif message.text == 'Узнать расписание':
+        await message.reply('Вы на странице расписания', reply=False, reply_markup=menukb.dayMenu)
+
+    elif message.text == 'Главное меню':
+        await message.reply('Вы в главном меню', reply=False, reply_markup=menukb.mainMenu)
+
+
     
+    
+
 
     # await message.answer(message.text)
