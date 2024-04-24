@@ -5,7 +5,12 @@ btnGroup = KeyboardButton('Изменить группу')
 btnGroupName = KeyboardButton('Узнать группу')
 btnNotif = KeyboardButton('Уведомления')
 
+btnBack = KeyboardButton('Назад')
+btnNotifOn = KeyboardButton('Включить')
+btnNotifOff = KeyboardButton('Выключить')
 
+notifon = ReplyKeyboardMarkup().add(btnNotifOn, btnBack)
+notifoff = ReplyKeyboardMarkup().add(btnNotifOff, btnBack)
 mainMenu = ReplyKeyboardMarkup().add(btnSch, btnGroupName, btnGroup, btnNotif)
 
 btnToday = KeyboardButton('Расписание на сегодня')

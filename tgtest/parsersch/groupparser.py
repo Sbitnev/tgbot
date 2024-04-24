@@ -18,7 +18,7 @@ for a in group_links:
     arr += a.find_all('a')
 
 # Извлекаем текст из каждой ссылки
-group_numbers = [link.text.upper() for link in arr]
+group_numbers = [link.text for link in arr]
     
 if __name__ == '__main__':
     print(group_numbers)

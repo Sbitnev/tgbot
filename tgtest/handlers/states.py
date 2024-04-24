@@ -5,3 +5,9 @@ class ChooseGroup(StatesGroup):
 
 class GetGroup(StatesGroup):
     group = State()
+
+class DeleteGroup(StatesGroup):
+    group = State()
+
+class ChooseNotif(StatesGroup):
+    notif = State()

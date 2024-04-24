@@ -5,20 +5,20 @@ import json
 import emoji
 from createbot import bot, dp, ADMINS_CHAT_ID
 from aiogram import types
-from handlers.states import ChooseGroup
+from handlers.states import ChooseGroup, ChooseNotif
 from database import sqldb
 import datetime
 from keyb import menukb
 from handlers import adminside
 
-def get_day_and_week():
+async def get_day_and_week():
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     today = datetime.date.today()
     day_of_week = today.weekday()  # Monday - 0, Sunday - 6
     even_week = "odd" if (today.isocalendar()[1] % 2 == 0) else "even"  # 0 for odd week, 1 for even
     return even_week, day_of_week
 
-def schedule_to_text(schedule):
+async def schedule_to_text(schedule):
     text = ""
     for week_type, days in schedule.items():
         text += f"{week_type.capitalize()} week:\n"
@@ -26,7 +26,7 @@ def schedule_to_text(schedule):
             text += format_day({day : lessons})
     return text
 
-def format_day(schedule_dict):
+async def format_day(schedule_dict):
     output = ""
     weekdays = {
     "Monday": "Понедельник",
@@ -50,10 +50,10 @@ def format_day(schedule_dict):
                 output += f"Формат: {arr[2]}\n\n"
     return output
 
-def day_sch(id, week, day):
+async def day_sch(id, week, day):
     schedule_text = ''
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    group_num = str(sqldb.get_group_name(id))
+    group_num = str(await sqldb.get_group_name(id))
     with open("groups/"+str(group_num)+".json") as file:
         SCHEDULE = json.load(file)
     if day == 7:
@@ -62,7 +62,7 @@ def day_sch(id, week, day):
     else:
         day = days_of_week[(day)%7]
 
-    schedule_text = format_day({day:SCHEDULE[week][day]})
+    schedule_text = await format_day({day:SCHEDULE[week][day]})
     return schedule_text
 
 
@@ -97,53 +97,49 @@ async def get_group(message: types.Message, state: FSMContext):
 
     await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь клавиатурой", reply=False, reply_markup=menukb.mainMenu)
 
-# @dp.message_handler(commands=['schedule'])
-# async def schedule(message: types.Message):
-
-#     schedule_text = ''
-#     group_num = str(sqldb.get_group_name(message.from_user.id))
-#     with open("groups/"+str(group_num)+".json") as file:
-#         SCHEDULE = json.load(file)
-    
-#     schedule_text = schedule_to_text(SCHEDULE)
-    
-#     await message.reply(f'**Расписание для группы {group_num}:**\n\n{schedule_text}', reply=False, parse_mode="Markdown")
-
 @dp.message_handler()
 async def echo(message: types.Message):
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     if message.text == 'Расписание на сегодня':
-        week, day = get_day_and_week()
-        schedule_text = day_sch(message.from_user.id, week, day)
+        result = await get_day_and_week()
+        week = result[0]
+        day = result[1]
+        schedule_text = await day_sch(message.from_user.id, week, day)
         await message.answer(schedule_text, parse_mode="Markdown")
     
     elif message.text == 'Расписание на завтра':
-        week, day = get_day_and_week()
-        schedule_text = day_sch(message.from_user.id, week, day+1)
+        result = await get_day_and_week()
+        week = result[0]
+        day = result[1]
+        schedule_text = await day_sch(message.from_user.id, week, day+1)
         await message.answer(schedule_text, parse_mode="Markdown")
 
     elif message.text == 'Расписание на эту неделю':
         schedule_text = ''
-        group_num = str(sqldb.get_group_name(message.from_user.id))
+        group_num = str(await sqldb.get_group_name(message.from_user.id))
         with open("groups/"+str(group_num)+".json") as file:
             SCHEDULE = json.load(file)
-        week, day = get_day_and_week()
+        result = await get_day_and_week()
+        week = result[0]
+        day = result[1]
         SCHEDULE = SCHEDULE[week]
         for day, lessons in SCHEDULE.items():
-            schedule_text += format_day({day : lessons})
+            schedule_text += await format_day({day : lessons})
     
         await message.answer(schedule_text, parse_mode="Markdown")
 
     elif message.text == 'Расписание на следующую неделю':
         schedule_text = ''
-        group_num = str(sqldb.get_group_name(message.from_user.id))
+        group_num = str(await sqldb.get_group_name(message.from_user.id))
         with open("groups/"+str(group_num)+".json") as file:
             SCHEDULE = json.load(file)
-        week, day = get_day_and_week()
+        result = await get_day_and_week()
+        week = result[0]
+        day = result[1]
         week = "odd" if (week == "even") else "even"
         SCHEDULE = SCHEDULE[week]
         for day, lessons in SCHEDULE.items():
-            schedule_text += format_day({day : lessons})
+            schedule_text += await format_day({day : lessons})
     
         await message.answer(schedule_text, parse_mode="Markdown")
 
@@ -152,7 +148,7 @@ async def echo(message: types.Message):
         await message.reply('Введите номер вашей группы латинскими буквами:', reply=False)
 
     elif message.text == 'Узнать группу':
-        group_num = str(sqldb.get_group_name(message.from_user.id))
+        group_num = str(await sqldb.get_group_name(message.from_user.id))
         await message.reply(f'Вы указали этот номер группы: {group_num}', reply=False)
 
     elif message.text == 'Узнать расписание':
@@ -161,8 +157,22 @@ async def echo(message: types.Message):
     elif message.text == 'Главное меню':
         await message.reply('Вы в главном меню', reply=False, reply_markup=menukb.mainMenu)
 
+    elif message.text == 'Назад':
+        await message.reply('Вы в главном меню', reply=False, reply_markup=menukb.mainMenu)
 
+    elif message.text == 'Уведомления':
+        if await sqldb.get_notif(message.from_user.id):
+            await message.reply('Уведомления включены', reply=False, reply_markup=menukb.notifoff)
+        else:
+            await message.reply('Уведомления выключены', reply=False, reply_markup=menukb.notifon)
     
+    elif message.text == 'Включить':
+        await sqldb.change_notif(message.from_user.id, 1)
+        await message.reply('Уведомления включены', reply=False, reply_markup=menukb.mainMenu)
+    
+    elif message.text == 'Выключить':
+        await sqldb.change_notif(message.from_user.id, 0)
+        await message.reply('Уведомления выключены', reply=False, reply_markup=menukb.mainMenu)
     
 
 

@@ -30,12 +30,19 @@ async def add_group_handler(callback: types.CallbackQuery):
 async def process_name(message: types.Message, state: FSMContext):
     number = message.text  
     await state.finish()
-    if parserjson.get_groupschedule(number):
-        await bot.send_message(ADMINS_CHAT_ID, "Успешно")
+    await bot.send_message(ADMINS_CHAT_ID, await parserjson.get_groupschedule(number))
+
+# Обработчик команды
+@dp.message_handler(commands=['addall'])
+async def command_handler(message: types.Message):
+    if message.chat.id == ADMINS_CHAT_ID:
+        # Ответ на команду только в чате с администратором
+        for i in sqldb.allg:
+            await sqldb.add_group(i)
+        await message.answer("Успешно")
     else:
-        await bot.send_message(ADMINS_CHAT_ID, "неУспешно")
-
-
+        # Игнорировать команду в других чатах
+        pass
 
 # async def add_proxy_data(state, data: dict):
 #     async with state.proxy() as proxy:
