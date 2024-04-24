@@ -2,7 +2,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 import os
 import json
-import emoji
 from createbot import bot, dp, ADMINS_CHAT_ID
 from aiogram import types
 from handlers.states import ChooseGroup, ChooseNotif
@@ -10,6 +9,23 @@ from database import sqldb
 import datetime
 from keyb import menukb
 from handlers import adminside
+import pickle
+from parsersch import parserjson
+
+async def job():
+    user_ids = [id_[0] for id_ in await sqldb.get_notif_users()]
+    print(user_ids)
+    # user_ids = [350509350]
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    for user_id in user_ids:
+        try:
+            group_num = str(await sqldb.get_group_name(user_id))
+            week, day = await get_day_and_week()
+            schedule_text = await day_sch(user_id, week, day+1)
+            if not ('Нет занятий' in schedule_text):
+                await bot.send_message(user_id, "Занятия завтра: \n\n"+schedule_text, parse_mode="Markdown")
+        except Exception as e:
+            print(f"Ошибка при отправке сообщения пользователю {user_id}: {e}")
 
 async def get_day_and_week():
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -82,18 +98,23 @@ async def start(message: types.Message):
     else:
         await message.reply('Здравствуй! Это бот, который отправляет расписание университета ИТМО. Для получения списка команд воспользуйтесь /help', reply=False, reply_markup=menukb.mainMenu)
 
+
 # Обработчик ввода номера группы
 @dp.message_handler(state=ChooseGroup.group)
 async def get_group(message: types.Message, state: FSMContext):
-    group_num = message.text
-    group_num = group_num.upper()
-    if not os.path.exists('groups/'+str(group_num)+'.json'):
+    group_num = message.text.upper()
+    with open('groups/allgroups.pkl', 'rb') as file:
+        allgroups = pickle.load(file)
+    upperallgroups = [x.upper() for x in allgroups]
+    if not group_num in upperallgroups:
         await message.reply('Неверный номер группы.', reply=False)
         return
     
     await state.finish()
-    
+    group_num = allgroups[upperallgroups.index(group_num)]
     await sqldb.change_user_group(message.from_user.id, group_num)
+    if not os.path.exists('groups/'+str(group_num)+'.json'):
+        await parserjson.get_groupschedule(group_num)
 
     await message.reply(f"Ваша группа: {group_num}\nДля получения расписания воспользуйтесь клавиатурой", reply=False, reply_markup=menukb.mainMenu)
 
@@ -176,4 +197,3 @@ async def echo(message: types.Message):
     
 
 
-    # await message.answer(message.text)

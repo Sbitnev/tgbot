@@ -103,11 +103,12 @@ async def get_groupschedule(group):
         print('NO GROUP')
         return 'Такой группы не существует'
 
-def deletegroup(group):
+async def deletegroup(group):
     group = group.upper()
     file_path = 'groups/'+str(group)+'.json'
     if os.path.exists('groups/'+str(group)+'.json'):
         os.remove(file_path)
+        await sqldb.change_schedule(group, 'no_schedule')
         return f'Группа {group} удалена'
     else:
         return 'Такой группы не существует'

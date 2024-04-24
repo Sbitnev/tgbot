@@ -3,6 +3,7 @@ import config
 from bs4 import BeautifulSoup
 import os.path
 import json
+import pickle
 
 
 url = 'https://itmo.ru/ru/schedule/raspisanie_zanyatiy.htm'
@@ -20,5 +21,8 @@ for a in group_links:
 # Извлекаем текст из каждой ссылки
 group_numbers = [link.text for link in arr]
     
+with open('groups/allgroups.pkl', 'wb') as file:
+    pickle.dump(group_numbers, file)
+
 if __name__ == '__main__':
     print(group_numbers)

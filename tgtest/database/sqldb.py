@@ -30,7 +30,8 @@ async def add_group(group):
         cursor.execute('INSERT INTO groups VALUES (?, ?, ?)', (group, 'no_schedule', 0))
         base.commit()
     else:
-        print('exists')
+        # print('exists')
+        return 0
     
 
 async def add_all():

@@ -1,0 +1,9 @@
+aiogram
+aiocron
+requests
+config
+bs4
+os
+json
+datetime
+sqlite3
